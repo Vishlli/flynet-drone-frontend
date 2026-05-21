@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getMissions, createMission, deleteMission, updateMission, getDrones } from '../services/api';
+import { getMissions, createMission, deleteMission, updateMission, getDrones, approveMission } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
 const Missions = () => {
@@ -44,7 +44,7 @@ const Missions = () => {
 
   const handleApprove = async (id) => {
     try {
-      await updateMission(id, { status: 'in-progress' });
+      await approveMission(id);
       fetchAll();
     } catch (err) {
       console.error(err);

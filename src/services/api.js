@@ -12,6 +12,7 @@ API.interceptors.request.use((req) => {
 
 export const loginUser = (data) => API.post('/auth/login', data);
 export const registerUser = (data) => API.post('/auth/register', data);
+export const createUser = (data) => API.post('/auth/create-user', data);
 
 export const getDrones = () => API.get('/drones');
 export const getDroneById = (id) => API.get(`/drones/${id}`);
