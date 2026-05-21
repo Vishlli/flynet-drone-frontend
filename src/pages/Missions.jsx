@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { getMissions, createMission, deleteMission, updateMission, getDrones } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 const Missions = () => {
   const [missions, setMissions] = useState([]);
   const [drones, setDrones] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+
   const [form, setForm] = useState({
     title: '', description: '', priority: 'medium', drone_id: '',
     start_time: '', end_time: '', location_lat: '', location_lng: ''
@@ -35,6 +39,15 @@ const Missions = () => {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleApprove = async (id) => {
+    try {
+      await updateMission(id, { status: 'in-progress' });
+      fetchAll();
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -69,42 +82,33 @@ const Missions = () => {
         </button>
       </div>
 
+      {!isAdmin && (
+        <div className="bg-yellow-900 border border-yellow-600 text-yellow-300 rounded-lg px-4 py-3 mb-6 text-sm">
+          You can create missions. An admin must approve them before they become active.
+        </div>
+      )}
+
       {showForm && (
         <div className="bg-gray-900 rounded-xl p-6 mb-6 shadow-lg">
           <h3 className="text-lg font-semibold text-white mb-4">Create New Mission</h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-gray-400 text-sm mb-1 block">Mission Title</label>
-              <input
-                type="text"
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-                placeholder="e.g. Northern Patrol"
-                className="w-full bg-gray-800 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
-                required
-              />
+              <input type="text" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
+                placeholder="e.g. Northern Patrol" className="w-full bg-gray-800 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400" required />
             </div>
             <div>
               <label className="text-gray-400 text-sm mb-1 block">Assign Drone</label>
-              <select
-                value={form.drone_id}
-                onChange={(e) => setForm({ ...form, drone_id: e.target.value })}
-                className="w-full bg-gray-800 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
-                required
-              >
+              <select value={form.drone_id} onChange={(e) => setForm({ ...form, drone_id: e.target.value })}
+                className="w-full bg-gray-800 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400" required>
                 <option value="">Select a drone</option>
-                {drones.map(d => (
-                  <option key={d.id} value={d.id}>{d.name} — {d.model}</option>
-                ))}
+                {drones.map(d => <option key={d.id} value={d.id}>{d.name} — {d.model}</option>)}
               </select>
             </div>
             <div>
               <label className="text-gray-400 text-sm mb-1 block">Priority</label>
-              <select
-                value={form.priority}
-                onChange={(e) => setForm({ ...form, priority: e.target.value })}
-                className="w-full bg-gray-800 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
-              >
+              <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}
+                className="w-full bg-gray-800 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400">
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
                 <option value="high">High</option>
@@ -112,58 +116,32 @@ const Missions = () => {
             </div>
             <div>
               <label className="text-gray-400 text-sm mb-1 block">Description</label>
-              <input
-                type="text"
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                placeholder="Mission details"
-                className="w-full bg-gray-800 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
-              />
+              <input type="text" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
+                placeholder="Mission details" className="w-full bg-gray-800 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400" />
             </div>
             <div>
               <label className="text-gray-400 text-sm mb-1 block">Start Time</label>
-              <input
-                type="datetime-local"
-                value={form.start_time}
-                onChange={(e) => setForm({ ...form, start_time: e.target.value })}
-                className="w-full bg-gray-800 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
-              />
+              <input type="datetime-local" value={form.start_time} onChange={(e) => setForm({ ...form, start_time: e.target.value })}
+                className="w-full bg-gray-800 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400" />
             </div>
             <div>
               <label className="text-gray-400 text-sm mb-1 block">End Time</label>
-              <input
-                type="datetime-local"
-                value={form.end_time}
-                onChange={(e) => setForm({ ...form, end_time: e.target.value })}
-                className="w-full bg-gray-800 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
-              />
+              <input type="datetime-local" value={form.end_time} onChange={(e) => setForm({ ...form, end_time: e.target.value })}
+                className="w-full bg-gray-800 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400" />
             </div>
             <div>
               <label className="text-gray-400 text-sm mb-1 block">Latitude</label>
-              <input
-                type="text"
-                value={form.location_lat}
-                onChange={(e) => setForm({ ...form, location_lat: e.target.value })}
-                placeholder="e.g. 13.0827"
-                className="w-full bg-gray-800 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
-              />
+              <input type="text" value={form.location_lat} onChange={(e) => setForm({ ...form, location_lat: e.target.value })}
+                placeholder="e.g. 13.0827" className="w-full bg-gray-800 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400" />
             </div>
             <div>
               <label className="text-gray-400 text-sm mb-1 block">Longitude</label>
-              <input
-                type="text"
-                value={form.location_lng}
-                onChange={(e) => setForm({ ...form, location_lng: e.target.value })}
-                placeholder="e.g. 80.2707"
-                className="w-full bg-gray-800 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
-              />
+              <input type="text" value={form.location_lng} onChange={(e) => setForm({ ...form, location_lng: e.target.value })}
+                placeholder="e.g. 80.2707" className="w-full bg-gray-800 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400" />
             </div>
             <div className="md:col-span-2">
-              <button
-                type="submit"
-                disabled={loading}
-                className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg transition"
-              >
+              <button type="submit" disabled={loading}
+                className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg transition">
                 {loading ? 'Creating...' : 'Create Mission'}
               </button>
             </div>
@@ -178,7 +156,8 @@ const Missions = () => {
               <div>
                 <h3 className="text-lg font-bold text-white">{mission.title}</h3>
                 <p className="text-gray-400 text-sm mt-1">{mission.description}</p>
-                <p className="text-gray-500 text-xs mt-2">Drone: {mission.drone_name || 'Unassigned'}</p>
+                <p className="text-gray-500 text-xs mt-2">Drone: {mission.drone_name || 'Unassigned'} · Assigned by: {mission.assigned_by_name}</p>
+                {mission.start_time && <p className="text-gray-500 text-xs">Start: {new Date(mission.start_time).toLocaleString()}</p>}
               </div>
               <div className="flex flex-col gap-2 items-end">
                 <span className={`px-2 py-1 rounded text-xs font-semibold ${
@@ -193,25 +172,25 @@ const Missions = () => {
                 }`}>{mission.status}</span>
               </div>
             </div>
-            <div className="flex gap-3 mt-4">
-              <button
-                onClick={() => handleStatusChange(mission, 'in-progress')}
-                className="bg-blue-900 hover:bg-blue-700 text-blue-300 px-3 py-1 rounded text-sm transition"
-              >
-                Mark In Progress
-              </button>
-              <button
-                onClick={() => handleStatusChange(mission, 'completed')}
-                className="bg-green-900 hover:bg-green-700 text-green-300 px-3 py-1 rounded text-sm transition"
-              >
-                Mark Completed
-              </button>
-              <button
-                onClick={() => handleDelete(mission.id)}
-                className="bg-red-900 hover:bg-red-700 text-red-300 px-3 py-1 rounded text-sm transition"
-              >
-                Delete
-              </button>
+            <div className="flex gap-3 mt-4 flex-wrap">
+              {isAdmin && mission.status === 'pending' && (
+                <button onClick={() => handleApprove(mission.id)}
+                  className="bg-green-900 hover:bg-green-700 text-green-300 px-3 py-1 rounded text-sm transition">
+                  Approve Mission
+                </button>
+              )}
+              {isAdmin && mission.status === 'in-progress' && (
+                <button onClick={() => handleStatusChange(mission, 'completed')}
+                  className="bg-blue-900 hover:bg-blue-700 text-blue-300 px-3 py-1 rounded text-sm transition">
+                  Mark Completed
+                </button>
+              )}
+              {isAdmin && (
+                <button onClick={() => handleDelete(mission.id)}
+                  className="bg-red-900 hover:bg-red-700 text-red-300 px-3 py-1 rounded text-sm transition">
+                  Delete
+                </button>
+              )}
             </div>
           </div>
         ))}

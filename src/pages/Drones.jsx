@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { getDrones, createDrone, deleteDrone } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 const Drones = () => {
   const [drones, setDrones] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [form, setForm] = useState({
     name: '', model: '', max_altitude: '', max_speed: '', payload_capacity: ''
   });
@@ -57,6 +60,12 @@ const Drones = () => {
         </button>
       </div>
 
+      {!isAdmin && (
+        <div className="bg-yellow-900 border border-yellow-600 text-yellow-300 rounded-lg px-4 py-3 mb-6 text-sm">
+          You can add drones. Only admins can delete or update drone records.
+        </div>
+      )}
+
       {showForm && (
         <div className="bg-gray-900 rounded-xl p-6 mb-6 shadow-lg">
           <h3 className="text-lg font-semibold text-white mb-4">Register New Drone</h3>
@@ -102,10 +111,10 @@ const Drones = () => {
                 <p className="text-gray-400 text-sm">{drone.model}</p>
               </div>
               <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                drone.status === 'active' ? 'bg-green-900 text-green-300' :
+                drone.computed_status === 'active' ? 'bg-green-900 text-green-300' :
                 drone.status === 'maintenance' ? 'bg-red-900 text-red-300' :
                 'bg-gray-700 text-gray-300'
-              }`}>{drone.status}</span>
+              }`}>{drone.computed_status || drone.status}</span>
             </div>
             <div className="grid grid-cols-2 gap-3 mb-4">
               <div className="bg-gray-800 rounded-lg p-3">
@@ -125,12 +134,14 @@ const Drones = () => {
                 <p className="text-white font-semibold">{drone.payload_capacity}kg</p>
               </div>
             </div>
-            <button
-              onClick={() => handleDelete(drone.id)}
-              className="w-full bg-red-900 hover:bg-red-700 text-red-300 py-2 rounded-lg text-sm transition"
-            >
-              Delete Drone
-            </button>
+            {isAdmin && (
+              <button
+                onClick={() => handleDelete(drone.id)}
+                className="w-full bg-red-900 hover:bg-red-700 text-red-300 py-2 rounded-lg text-sm transition"
+              >
+                Delete Drone
+              </button>
+            )}
           </div>
         ))}
       </div>

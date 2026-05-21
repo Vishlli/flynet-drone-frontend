@@ -29,3 +29,4 @@ export const getAlerts = () => API.get('/alerts');
 export const markAsRead = (id) => API.put(`/alerts/${id}/read`);
 export const markAllAsRead = () => API.put('/alerts/read-all');
 export const deleteAlert = (id) => API.delete(`/alerts/${id}`);
+export const approveMission = (id) => API.put(`/missions/${id}/approve`);

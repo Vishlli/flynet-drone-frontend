@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getDrones } from '../services/api';
-import { getMissions } from '../services/api';
+import { getDrones, getMissions } from '../services/api';
 import socket from '../services/socket';
 
 const StatCard = ({ title, value, color, icon }) => (
@@ -18,7 +17,7 @@ const StatCard = ({ title, value, color, icon }) => (
 const Dashboard = () => {
   const [drones, setDrones] = useState([]);
   const [missions, setMissions] = useState([]);
-  const [telemetry, setTelemetry] = useState(null);
+  const [telemetryMap, setTelemetryMap] = useState({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -34,7 +33,9 @@ const Dashboard = () => {
     fetchData();
 
     socket.connect();
-    socket.on('drone-telemetry', (data) => setTelemetry(data));
+    socket.on('drone-telemetry', (data) => {
+      setTelemetryMap(prev => ({ ...prev, [data.droneId]: data }));
+    });
 
     return () => {
       socket.off('drone-telemetry');
@@ -42,7 +43,7 @@ const Dashboard = () => {
     };
   }, []);
 
-  const activeDrones = drones.filter(d => d.status === 'active').length;
+  const activeDrones = drones.filter(d => d.computed_status === 'active').length;
   const pendingMissions = missions.filter(m => m.status === 'pending').length;
   const completedMissions = missions.filter(m => m.status === 'completed').length;
 
@@ -57,26 +58,33 @@ const Dashboard = () => {
         <StatCard title="Completed Missions" value={completedMissions} color="border-purple-400" icon="✅" />
       </div>
 
-      {telemetry && (
+      {Object.values(telemetryMap).length > 0 && (
         <div className="bg-gray-900 rounded-xl p-6 mb-8 shadow-lg">
-          <h3 className="text-lg font-semibold text-green-400 mb-4">🔴 Live Telemetry — Drone #{telemetry.droneId}</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-gray-800 rounded-lg p-4 text-center">
-              <p className="text-gray-400 text-sm">Battery</p>
-              <p className="text-2xl font-bold text-green-400">{telemetry.battery}%</p>
-            </div>
-            <div className="bg-gray-800 rounded-lg p-4 text-center">
-              <p className="text-gray-400 text-sm">Altitude</p>
-              <p className="text-2xl font-bold text-blue-400">{telemetry.altitude}m</p>
-            </div>
-            <div className="bg-gray-800 rounded-lg p-4 text-center">
-              <p className="text-gray-400 text-sm">Speed</p>
-              <p className="text-2xl font-bold text-yellow-400">{telemetry.speed} km/h</p>
-            </div>
-            <div className="bg-gray-800 rounded-lg p-4 text-center">
-              <p className="text-gray-400 text-sm">Status</p>
-              <p className="text-2xl font-bold text-purple-400">{telemetry.status}</p>
-            </div>
+          <h3 className="text-lg font-semibold text-green-400 mb-4">🔴 Live Telemetry</h3>
+          <div className="flex flex-col gap-4">
+            {Object.values(telemetryMap).map(telemetry => (
+              <div key={telemetry.droneId} className="bg-gray-800 rounded-lg p-4">
+                <p className="text-white font-semibold mb-3">{telemetry.droneName} <span className="text-gray-400 text-sm">(Drone #{telemetry.droneId})</span></p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-gray-700 rounded-lg p-3 text-center">
+                    <p className="text-gray-400 text-xs">Battery</p>
+                    <p className="text-xl font-bold text-green-400">{telemetry.battery}%</p>
+                  </div>
+                  <div className="bg-gray-700 rounded-lg p-3 text-center">
+                    <p className="text-gray-400 text-xs">Altitude</p>
+                    <p className="text-xl font-bold text-blue-400">{telemetry.altitude}m</p>
+                  </div>
+                  <div className="bg-gray-700 rounded-lg p-3 text-center">
+                    <p className="text-gray-400 text-xs">Speed</p>
+                    <p className="text-xl font-bold text-yellow-400">{telemetry.speed} km/h</p>
+                  </div>
+                  <div className="bg-gray-700 rounded-lg p-3 text-center">
+                    <p className="text-gray-400 text-xs">Status</p>
+                    <p className="text-xl font-bold text-purple-400">{telemetry.status}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
